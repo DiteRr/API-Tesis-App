@@ -1,0 +1,6 @@
+Flask
+flask_mysqldb
+stravalib
+requests
+urllib3
+git+https://github.com/sladkovm/strava-swagger-client.git
