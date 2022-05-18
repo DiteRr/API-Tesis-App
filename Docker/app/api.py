@@ -20,7 +20,7 @@ mysql = MySQL(app)
 
 STRAVA_CLIENT_ID = "74995"
 STRAVA_CLIENT_SECRET = "d6d2222bb093f8a3117a35aa428c045beac19e67"
-REDIRECT_URI = 'http://192.168.0.7:5000/strava_token' #http://146.83.216.251:5000 servidor
+REDIRECT_URI = 'http://192.168.0.5:5000/strava_token' #http://146.83.216.251:5000 servidor
 
 
 def getActivities(access_token):
@@ -42,6 +42,11 @@ def getActivities(access_token):
         return(e)
 
 #Validación de IDUsuario y contraseña.
+
+@app.route('/test')
+def test():  
+     return jsonify({"status": "ok"})
+     
 @app.route('/login', methods=['POST'])
 def login():   
     data = request.json
@@ -64,6 +69,73 @@ def login():
 
     return jsonify(msg)
 
+@app.route('/Preguntas', methods=['POST'])
+def Preguntas():
+    data = request.json
+    tipo_preg = data['tipo_preg']
+    #SELECT pregunta FROM Pregunta where tipo_cuestionario = "pep"
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id , pregunta, tipo_respuesta FROM Pregunta where tipo_cuestionario = '%s'" %tipo_preg)
+    result = {'pregs':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
+    res = []
+    for preg in result['pregs']:
+        cur.execute("SELECT alternativa FROM Alternativas where id_pregunta = %d" %int(preg['id']))
+        alternativas = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
+        array_alternativas = []
+        for alternativa in alternativas['data']:
+             array_alternativas.append(alternativa['alternativa'])
+        res.append({'id_pregunta': preg['id'], 'pregunta': preg['pregunta'], 'alternativas': array_alternativas, 'tipo_respuesta': preg['tipo_respuesta'] })
+    #print(result)
+    return jsonify({'pregs': res})
+
+@app.route('/Actividades_registradas', methods=['POST'])
+def ActividadesRegistradas():
+    data = request.json
+    print(data)
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT Registro.id_activity FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity WHERE Actividad.IDathlete = %s GROUP BY Registro.id_activity;" %data['id_user'])
+    result = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
+    return jsonify(result)
+
+
+@app.route('/Guardar_datos', methods=['POST'])
+def GuardarRespuestas():
+    data = request.json
+    print(data)
+    #{"actividad": {"average_speed": 1.55, "distance": 3.1, "elapsed_time": 9, "elev_high": 7.5, "elev_low": 7.5, "id_actividad": 7122704061, "name": "Carrera intensa", "type": "Run"}, 
+    #"data": [{"id_preg": 1, "respuesta": "0"}, {"id_preg": 2, "respuesta": "0"}, {"id_preg": 3, "respuesta": "0"}, {"id_preg": 4, "respuesta": "19"}, {"id_preg": 5, "respuesta": "0"}, 
+    #    {"id_preg": 6, "respuesta": "0"}, {"id_preg": 7, "respuesta": "0"}, {"id_preg": 11, "respuesta": "Corriendo"}, {"id_preg": 12, "respuesta": "Súbito, sin molestias anteriores"}, 
+    #    {"id_preg": 13, "respuesta": "Sin contacto con un objeto o persona Ejemplo: Lesionarse el tobillo al correr)"}, {"id_preg": 14, "respuesta": "Cabeza"}, {"id_preg": 15, "respuesta": "Médula espina"}], 
+    #"id_user": "91213168"}
+
+    #Id_actividad, id_usuario ...
+    #(123456, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
+    print(data["actividad"]["id_actividad"])
+    print(data["id_user"])
+    #cur.execute("insert into Usuario values ('{}', '{}', '{}', '{}', '{}', '{}')".format(
+    cur = mysql.connection.cursor()
+    cur.execute("insert into Actividad values ('{}', '{}', {}, {}, {}, {}, {}, '{}', '{}')".format(
+        data["actividad"]["id_actividad"],
+        data['id_user'],
+        float(data["actividad"]["distance"]),
+        float(data["actividad"]["elapsed_time"]),
+        float(data["actividad"]["elev_high"]),
+        float(data["actividad"]["elev_low"]),
+        float(data["actividad"]["average_speed"]),
+        data["actividad"]["name"],
+        data["actividad"]["type"],
+    ))
+    mysql.connection.commit()
+
+    for preg in data['data']:
+        cur.execute("insert into Registro VALUES ('{}', {}, '{}')".format(
+            data["actividad"]["id_actividad"],
+            int(preg['id_preg']),
+            preg['respuesta'],
+        ))
+    mysql.connection.commit()
+
+    return jsonify({'status': 200})
 
 #Actualizar el access_token y obtener la lista de actividades
 @app.route('/update_token', methods=['POST'])
