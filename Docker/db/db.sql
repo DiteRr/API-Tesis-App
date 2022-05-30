@@ -41,6 +41,7 @@ CREATE TABLE Registro(
     id_activity VARCHAR (50) NOT NULL,
     id_pregunta INT NOT NULL,
     respuesta VARCHAR(200),
+    Fecha DATE NOT NULL,
     PRIMARY KEY (id_activity, id_pregunta),
     FOREIGN KEY(id_activity) REFERENCES Actividad(ID),
     FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
@@ -75,45 +76,42 @@ VALUES
 
 INSERT INTO Pregunta
 VALUES
-(1, "¿Como calificaria el nivel de esfuerzo para completar el entrenamiento?", "pep", "slider"),
-(2, "¿Como calificaria su calidad de sueño la noche anterior al entrenamiento?", "pep", "slider"),
-(3, "¿Como calificaria su motivacion durante el entrenamiento?", "pep", "slider"),
-(4, "¿Como calificaria su estres durante el entrenamiento?","pep", "slider"),
-(5, "¿Como calificaria su animo durante el entrenamiento?", "pep", "slider"),
-(6, "¿Como calificaria su fatiga en general?", "pep", "slider"),
-(11, "¿Como se produjo su lesion?", "pl", "dropdown"),
-(12, "¿Como fue el inicio de su lesion?", "pl", "dropdown"),
-(13, "Si el inicio de su lesion fue subidto, ¿Cuál fue el mecanismo de su lesion?", "pl", "dropdown"),
-(14, "¿En que parte del cuerpo fue su lesion?", "pl", "dropdown"),
-(15, "¿En que tejido fue su lesion?", "pl", "dropdown"),
-(16, "¿Lorem ipsum bla bla bla?", "pr", "slider"),
+(1, "¿Cómo calificaría el nivel de esfuerzo para completar el entrenamiento?", "pep", "slider"),
+(2, "¿Cómo calificaría su calidad de sueño la noche anterior al entrenamiento?", "pep", "slider"),
+(3, "¿Como calificaria su motivación durante el entrenamiento?", "pep", "slider"),
+(4, "¿Cómo calificaría su estrés durante el entrenamiento?","pep", "slider"),
+(5, "¿Cómo calificaría su ánimo durante el entrenamiento?", "pep", "slider"),
+(6, "¿Cómo calificaría su fatiga en general?", "pep", "slider"),
+(11, "¿Cómo se produjo su lesión?", "pl", "dropdown"),
+(12, "¿Cómo fue el inicio de su lesión?", "pl", "dropdown"),
+(13, "Si el inicio de su lesión fue súbidto, ¿Cuál fue el mecanismo de su lesión?", "pl", "dropdown"),
+(14, "¿En qué parte del cuerpo fue su lesión?", "pl", "dropdown"),
+(15, "¿En qué tejido fue su lesión?", "pl", "dropdown"),
 (17, "¿Lorem ipsum bla bla bla?", "pr", "checkbox"),
-(18, "¿Lorem ipsum bla bla bla?", "pr", "slider"),
-(19, "¿Lorem ipsum bla bla bla?", "pr", "slider"),
 (20, "¿Lorem ipsum bla bla bla?", "pr", "checkbox");
 
 
 INSERT INTO Registro
 VALUES
-(123456, 1, "10"),
-(123456, 2, "8"),
-(123456, 3, "10"),
-(123456, 4, "8"),
-(123456, 5, "10"),
-(123456, 6, "8"),
-(1234561, 2, "3");
+(123456, 1, "10", '2022-04-03'),
+(123456, 2, "8", '2022-04-03'),
+(123456, 3, "10", '2022-04-03'),
+(123456, 4, "8", '2022-04-03'),
+(123456, 5, "10", '2022-04-03'),
+(123456, 6, "8", '2022-04-03'),
+(1234561, 2, "3", '2022-04-12');
 
 INSERT INTO Alternativas
 VALUES
 (11, "Corriendo"),
-(11, "En otra actividad asociada a correr (entrenamiento, traslados, preparación fisica, etc.)"),
+(11, "En otra actividad asociada a correr (entrenamiento, traslados, preparación física, etc.)"),
 (11, "Otra actividad no asociada a correr"),
-(12, "Subito, sin molestias anteriores"),
-(12, "Subito, pero con molestias anteriores"),
+(12, "Súbito, sin molestias anteriores"),
+(12, "Súbito, pero con molestias anteriores"),
 (12, "Gradual, las molestias incrementaron gradualmente"),
 (13, "Sin contacto con un objeto o persona Ejemplo: Lesionarse el tobillo al correr)"),
 (13, "Con contacto indirecto con objeto o persona (Ejemplo: Contactar con un objeto y secundariamente lesionarse el tobillo)"),
-(13, "Con contacto directo con un objeto o persona (Ejemplo: Golpearse con un objeto directamente en el tobillo, lesionandolo)"),
+(13, "Con contacto directo con un objeto o persona (Ejemplo: Golpearse con un objeto directamente en el tobillo, lesionándolo)"),
 (14, "Cabeza"),
 (14, "Cuello"),
 (14, "Hombros"),
@@ -123,7 +121,7 @@ VALUES
 (14, "Muñeca"),
 (14, "Manos"),
 (14, "Pecho"),
-(14, "Columna toracica"),
+(14, "Columna torácica"),
 (14, "Columna lumbosacra"),
 (14, "Abdomen"),
 (14, "Cadera/Ingle"),
@@ -132,7 +130,7 @@ VALUES
 (14, "Pierna"),
 (14, "Tobillo"),
 (15, "Músculo"),
-(15, "Tendon"),
+(15, "Tendón"),
 (15, "Cerebro"),
 (15, "Médula espina"),
 (15, "Hueso"),

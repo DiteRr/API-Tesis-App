@@ -137,6 +137,35 @@ def GuardarRespuestas():
 
     return jsonify({'status': 200})
 
+@app.route('/Registros', methods=['POST'])
+def registros2():
+    data = request.json
+    id_user = data['id_user']
+    #id_user = '91213168'
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta FROM Pregunta WHERE Pregunta.tipo_respuesta = 'slider'")
+    pregs= [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+
+    data = {}
+    for preg in pregs:
+        data.setdefault(preg['ID'], {'pregunta' : preg['pregunta'], 'labels': [], 'data':[]})
+    
+    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta WHERE Actividad.IDathlete = '{}' and Pregunta.tipo_respuesta = 'slider'".format(
+        id_user
+    ))
+    registros = {'registros':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
+    
+    for registro in registros['registros']:
+        data[registro['id_pregunta']]['labels'].append(registro['id_activity'])
+        data[registro['id_pregunta']]['data'].append(int(registro['respuesta']))
+    
+    pregus = []
+    for id_preg in data.keys():
+        pregus.append({'id_preg': id_preg, 'pregs' : data[id_preg]})
+
+    return jsonify({"data": {'registros': pregus ,'preguntas': pregs}})
+    
 #Actualizar el access_token y obtener la lista de actividades
 @app.route('/update_token', methods=['POST'])
 def update_accessToken():
