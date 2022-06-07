@@ -3,6 +3,8 @@ import urllib.parse
 from flask import Flask, request, Response, jsonify, redirect, render_template
 from flask_mysqldb import MySQL
 import requests
+import datetime
+import time
 
 import swagger_client
 from swagger_client.rest import ApiException
@@ -20,7 +22,7 @@ mysql = MySQL(app)
 
 STRAVA_CLIENT_ID = "74995"
 STRAVA_CLIENT_SECRET = "d6d2222bb093f8a3117a35aa428c045beac19e67"
-REDIRECT_URI = 'http://192.168.0.5:5000/strava_token' #http://146.83.216.251:5000 servidor
+REDIRECT_URI = 'http://192.168.0.20:5000/strava_token' #http://146.83.216.251:5000 servidor
 
 
 def getActivities(access_token):
@@ -28,13 +30,13 @@ def getActivities(access_token):
     # create an instance of the API class
     api_instance = swagger_client.ActivitiesApi(swagger_client.ApiClient(configuration))
     before = 56 # Integer | An epoch timestamp to use for filtering activities that have taken place before a certain time. (optional)
-    after = 56 # Integer | An epoch timestamp to use for filtering activities that have taken place after a certain time. (optional)
+    after = int(time.time()) - 604800 # Integer | An epoch timestamp to use for filtering activities that have taken place after a certain time. (optional)
     page = 56 # Integer | Page number. Defaults to 1. (optional)
     per_page = 56 # Integer | Number of items per page. Defaults to 30. (optional) (default to 30)
 
     try: 
         # List Athlete Activities
-        api_response = api_instance.get_logged_in_athlete_activities()
+        api_response = api_instance.get_logged_in_athlete_activities(after=after)
         return(api_response)
         #pprint(api_response)
     except ApiException as e:
@@ -47,13 +49,15 @@ def getActivities(access_token):
 def test():  
      return jsonify({"status": "ok"})
      
+#Validación de IDUsuario y contraseña.
 @app.route('/login', methods=['POST'])
 def login():   
     data = request.json
+    print(data)
     cur = mysql.connection.cursor()
     print(data)
     
-    cur.execute("SELECT  * from Usuario where id = %d" %int(data['id']))
+    cur.execute("SELECT  * from usuario where id = %d" %int(data['id']))
     result = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
   
     if(result['data'] == []):
@@ -68,6 +72,8 @@ def login():
             msg = {'message': 1}
 
     return jsonify(msg)
+
+
 
 @app.route('/Preguntas', methods=['POST'])
 def Preguntas():
@@ -110,11 +116,10 @@ def GuardarRespuestas():
 
     #Id_actividad, id_usuario ...
     #(123456, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-    print(data["actividad"]["id_actividad"])
-    print(data["id_user"])
+    #Wed, 01 Jun 2022 15:43:05 GMT
     #cur.execute("insert into Usuario values ('{}', '{}', '{}', '{}', '{}', '{}')".format(
     cur = mysql.connection.cursor()
-    cur.execute("insert into Actividad values ('{}', '{}', {}, {}, {}, {}, {}, '{}', '{}')".format(
+    cur.execute("insert into Actividad values ('{}', '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}', '{}')".format(
         data["actividad"]["id_actividad"],
         data['id_user'],
         float(data["actividad"]["distance"]),
@@ -124,18 +129,22 @@ def GuardarRespuestas():
         float(data["actividad"]["average_speed"]),
         data["actividad"]["name"],
         data["actividad"]["type"],
+        datetime.datetime.strptime(data["actividad"]["start_date"], '%a, %d %b %Y %H:%M:%S GMT'),
+        datetime.datetime.strptime(data["actividad"]["start_date_local"], '%a, %d %b %Y %H:%M:%S GMT'),
     ))
     mysql.connection.commit()
 
     for preg in data['data']:
-        cur.execute("insert into Registro VALUES ('{}', {}, '{}')".format(
+        cur.execute("insert into Registro VALUES ('{}', {}, '{}', '{}')".format(
             data["actividad"]["id_actividad"],
             int(preg['id_preg']),
             preg['respuesta'],
+            datetime.date.today(),
         ))
     mysql.connection.commit()
 
     return jsonify({'status': 200})
+
 
 @app.route('/Registros', methods=['POST'])
 def registros2():
@@ -151,21 +160,23 @@ def registros2():
     for preg in pregs:
         data.setdefault(preg['ID'], {'pregunta' : preg['pregunta'], 'labels': [], 'data':[]})
     
-    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta WHERE Actividad.IDathlete = '{}' and Pregunta.tipo_respuesta = 'slider'".format(
+    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta, Actividad.start_date_local FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta WHERE Actividad.IDathlete = '{}' and Pregunta.tipo_respuesta = 'slider'".format(
         id_user
     ))
     registros = {'registros':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
     
     for registro in registros['registros']:
-        data[registro['id_pregunta']]['labels'].append(registro['id_activity'])
+        data[registro['id_pregunta']]['labels'].append(registro['start_date_local'])
         data[registro['id_pregunta']]['data'].append(int(registro['respuesta']))
     
     pregus = []
     for id_preg in data.keys():
         pregus.append({'id_preg': id_preg, 'pregs' : data[id_preg]})
 
-    return jsonify({"data": {'registros': pregus ,'preguntas': pregs}})
-    
+    return jsonify({"registros": pregus})
+
+
+
 #Actualizar el access_token y obtener la lista de actividades
 @app.route('/update_token', methods=['POST'])
 def update_accessToken():
@@ -202,10 +213,12 @@ def update_accessToken():
         elev_low = response[i].elev_low
         name = response[i].name
         type = response[i].type
+        start_date = response[i].start_date
+        start_date_local = response[i].start_date_local
 
         data = {"id_actividad": id_actividad, "distance": distance, "average_speed": average_speed, 
                 "elapsed_time": elapsed_time, "elev_high": elev_high, "elev_low": elev_low,
-                 "name":name, "type": type}
+                 "name":name, "type": type, "start_date": start_date, "start_date_local": start_date_local}
         res.append(data)
     return jsonify({'activities': res})
 
@@ -227,10 +240,12 @@ def get_activities():
         elev_low = response[i].elev_low
         name = response[i].name
         type = response[i].type
+        start_date = response[i].start_date
+        start_date_local = response[i].start_date_local
 
         data = {"id_actividad": id_actividad, "distance": distance, "average_speed": average_speed, 
                 "elapsed_time": elapsed_time, "elev_high": elev_high, "elev_low": elev_low,
-                 "name":name, "type": type}
+                 "name":name, "type": type, "start_date": start_date, "start_date_local": start_date_local}
         res.append(data)
 
     return jsonify({'activities': res})
@@ -252,6 +267,15 @@ def new_user(data):
                                 data['access_token'],
                                 data['refresh_token']))
         mysql.connection.commit()
+
+@app.route('/save_user', methods=['POST'])
+def save_user():
+    data = request.json
+    new_user(data)
+    # data = {"ID": id_user, "username": username, "firstname": firstname, 
+    #        "lastname": lastname, "access_token": access_token, "refresh_token":refresh_token}
+
+    return jsonify({'status': 200})
 
 #Obtener y guardar los datos de usuario cuando autorize los permisos de la aplicación.
 def exchange_token(code):

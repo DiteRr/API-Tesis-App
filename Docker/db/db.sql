@@ -19,8 +19,10 @@ CREATE TABLE Actividad(
     elev_high FLOAT NOT NULL,
     elev_low FLOAT NOT NULL,
     average_speed FLOAT NOT NULL,
-    name_activIty VARCHAR(50),
+    name_activity VARCHAR(50),
     type_activity VARCHAR(50),
+    date_start DATE NOT NULL,
+    start_date_local DATE NOT NULL,
     FOREIGN KEY(IDathlete) REFERENCES Usuario(ID)
 
 );
@@ -62,11 +64,11 @@ VALUES
 
 INSERT INTO Actividad
 VALUES
-(123456, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-(1234561, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-(12345623, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-(1234563, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-(1234564, 2, 13, 14, 14, 15, 13.2, "caminata", "run");
+(123456, 2, 13, 14, 14, 15, 13.2, "caminata", "run", '2022-04-03', '2022-04-03'),
+(1234561, 2, 13, 14, 14, 15, 13.2, "caminata", "run", '2022-04-03', '2022-04-03'),
+(12345623, 2, 13, 14, 14, 15, 13.2, "caminata", "run", '2022-04-03', '2022-04-03'),
+(1234563, 2, 13, 14, 14, 15, 13.2, "caminata", "run", '2022-04-03', '2022-04-03'),
+(1234564, 2, 13, 14, 14, 15, 13.2, "caminata", "run", '2022-04-03', '2022-04-03');
 
 INSERT INTO TipoCuestionario
 VALUES
