@@ -44,22 +44,15 @@ def getActivities(access_token):
         return(e)
 
 #Validación de IDUsuario y contraseña.
-
-@app.route('/test')
-def test():  
-     return jsonify({"status": "ok"})
-     
-#Validación de IDUsuario y contraseña.
 @app.route('/login', methods=['POST'])
 def login():   
     data = request.json
-    print(data)
     cur = mysql.connection.cursor()
-    print(data)
-    
-    cur.execute("SELECT  * from usuario where id = %d" %int(data['id']))
+
+    cur.execute("SELECT  * from Usuario where id = %d" %int(data['id']))
     result = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
-  
+    
+    #Verificar si encontro algun usuario guardado con el "id" recibido.
     if(result['data'] == []):
         #ID no valida o no registrada.
         msg = {'message': 0}
@@ -74,31 +67,37 @@ def login():
     return jsonify(msg)
 
 
-
 @app.route('/Preguntas', methods=['POST'])
 def Preguntas():
     data = request.json
-    tipo_preg = data['tipo_preg']
-    #SELECT pregunta FROM Pregunta where tipo_cuestionario = "pep"
+    tipo_cuestionario = data['tipo_preg']
+    #tipo_cuestionario = 'pl'
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id , pregunta, tipo_respuesta FROM Pregunta where tipo_cuestionario = '%s'" %tipo_preg)
-    result = {'pregs':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
-    res = []
-    for preg in result['pregs']:
-        cur.execute("SELECT alternativa FROM Alternativas where id_pregunta = %d" %int(preg['id']))
-        alternativas = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
-        array_alternativas = []
-        for alternativa in alternativas['data']:
-             array_alternativas.append(alternativa['alternativa'])
-        res.append({'id_pregunta': preg['id'], 'pregunta': preg['pregunta'], 'alternativas': array_alternativas, 'tipo_respuesta': preg['tipo_respuesta'] })
-    #print(result)
-    return jsonify({'pregs': res})
+
+    #Consultar por la preguntas de tipo slider correspondiente al tipo de cuestionario
+    cur.execute("SELECT PreguntaSlider.id_pregunta, Pregunta.pregunta, Pregunta.tipo_cuestionario, PreguntaSlider.tipo_preg, PreguntaSlider.valueStringMin, PreguntaSlider.valueStringMax, PreguntaSlider.tipo_respuesta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
+    pregs_slider = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+    #-----------------------
+
+    #Consultar por las preguntas de tipo dropdown correspondiente al tipo de cuestionario
+    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta, PreguntaDropDown.tipo_respuesta FROM Pregunta INNER JOIN PreguntaDropDown ON PreguntaDropDown.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
+    result = {'preguntas_dropdown':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
+    
+    preguntas_dropdown = []
+    for preg in result['preguntas_dropdown']:
+        cur.execute("SELECT alternativa FROM Alternativas where id_pregunta = %d" %int(preg['ID']))
+        alternativas = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+        preguntas_dropdown.append({'id_pregunta': preg['ID'], 'pregunta': preg['pregunta'], 'alternativas': alternativas, 'tipo_respuesta' : preg['tipo_respuesta']})
+    #-----------------------
+    
+    return jsonify({'pregs' : {'preguntas_slider' : pregs_slider, 'preguntas_dropdown' : preguntas_dropdown}})
 
 @app.route('/Actividades_registradas', methods=['POST'])
 def ActividadesRegistradas():
     data = request.json
-    print(data)
     cur = mysql.connection.cursor()
+
+    #Consultar por las actividades que registró el usuario
     cur.execute("SELECT Registro.id_activity FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity WHERE Actividad.IDathlete = %s GROUP BY Registro.id_activity;" %data['id_user'])
     result = {'data':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
     return jsonify(result)
@@ -106,19 +105,11 @@ def ActividadesRegistradas():
 
 @app.route('/Guardar_datos', methods=['POST'])
 def GuardarRespuestas():
+    #Guardar los datos principales de la actividad obtenidos por STRAVA + Las respuestas que registró el usuario.
     data = request.json
-    print(data)
-    #{"actividad": {"average_speed": 1.55, "distance": 3.1, "elapsed_time": 9, "elev_high": 7.5, "elev_low": 7.5, "id_actividad": 7122704061, "name": "Carrera intensa", "type": "Run"}, 
-    #"data": [{"id_preg": 1, "respuesta": "0"}, {"id_preg": 2, "respuesta": "0"}, {"id_preg": 3, "respuesta": "0"}, {"id_preg": 4, "respuesta": "19"}, {"id_preg": 5, "respuesta": "0"}, 
-    #    {"id_preg": 6, "respuesta": "0"}, {"id_preg": 7, "respuesta": "0"}, {"id_preg": 11, "respuesta": "Corriendo"}, {"id_preg": 12, "respuesta": "Súbito, sin molestias anteriores"}, 
-    #    {"id_preg": 13, "respuesta": "Sin contacto con un objeto o persona Ejemplo: Lesionarse el tobillo al correr)"}, {"id_preg": 14, "respuesta": "Cabeza"}, {"id_preg": 15, "respuesta": "Médula espina"}], 
-    #"id_user": "91213168"}
-
-    #Id_actividad, id_usuario ...
-    #(123456, 2, 13, 14, 14, 15, 13.2, "caminata", "run"),
-    #Wed, 01 Jun 2022 15:43:05 GMT
-    #cur.execute("insert into Usuario values ('{}', '{}', '{}', '{}', '{}', '{}')".format(
     cur = mysql.connection.cursor()
+
+    #Guardar los parametros de la actividad.
     cur.execute("insert into Actividad values ('{}', '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}', '{}')".format(
         data["actividad"]["id_actividad"],
         data['id_user'],
@@ -134,6 +125,7 @@ def GuardarRespuestas():
     ))
     mysql.connection.commit()
 
+    #Guardar las respuestas asociadas a cada pregunta.
     for preg in data['data']:
         cur.execute("insert into Registro VALUES ('{}', {}, '{}', '{}')".format(
             data["actividad"]["id_actividad"],
@@ -153,23 +145,27 @@ def registros2():
     #id_user = '91213168'
     cur = mysql.connection.cursor()
 
-    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta FROM Pregunta WHERE Pregunta.tipo_respuesta = 'slider'")
+    #Selecionar solamente las preguntas de tipo slider.
+    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID")
     pregs= [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
 
     data = {}
     for preg in pregs:
         data.setdefault(preg['ID'], {'pregunta' : preg['pregunta'], 'labels': [], 'data':[]})
     
-    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta, Actividad.start_date_local FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta WHERE Actividad.IDathlete = '{}' and Pregunta.tipo_respuesta = 'slider'".format(
+    #Selecionar los registros de respuestas asociados a las preguntas de tipo slider del usuario.
+    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta, Actividad.start_date_local FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Actividad.IDathlete = '{}'".format(
         id_user
     ))
     registros = {'registros':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
     
+    #Guardar la fecha de la actividad y la respuesta para cada pregunta de tipo slider.
     for registro in registros['registros']:
         data[registro['id_pregunta']]['labels'].append(registro['start_date_local'])
         data[registro['id_pregunta']]['data'].append(int(registro['respuesta']))
     
     pregus = []
+    #Cambiar el formato para guardar las preguntas
     for id_preg in data.keys():
         pregus.append({'id_preg': id_preg, 'pregs' : data[id_preg]})
 
@@ -181,9 +177,10 @@ def registros2():
 @app.route('/update_token', methods=['POST'])
 def update_accessToken():
     data = request.json
-    print(data)
+
     user_refresh_token = data['refresh_token']
 
+    #Solicitud actualización del token
     strava_request = requests.post(
         "https://www.strava.com/oauth/token",
         data={
@@ -195,6 +192,7 @@ def update_accessToken():
     ).json()
 
     access_token  = strava_request['access_token']
+    expired_at = strava_request['expires_at']
     
     #Actualizar access_token en la base de datos
     cur = mysql.connection.cursor()
@@ -202,8 +200,14 @@ def update_accessToken():
     mysql.connection.commit()
 
     #Luego de obtener el token actualizado, se procede a llamar las actividades del usuario.
-    response = getActivities(access_token)
+    try:
+        response = getActivities(access_token)
+    except ApiException as e:
+        return jsonify({'activities' : 'expired'})
+
     res = []
+
+    #Guardar los datos de la actividad en un JSON.
     for i in range(0, len(response)):
         id_actividad = response[i].id
         distance = response[i].distance
@@ -220,7 +224,8 @@ def update_accessToken():
                 "elapsed_time": elapsed_time, "elev_high": elev_high, "elev_low": elev_low,
                  "name":name, "type": type, "start_date": start_date, "start_date_local": start_date_local}
         res.append(data)
-    return jsonify({'activities': res})
+
+    return jsonify({'activities': res, "expired_at" : expired_at, "access_token" : access_token})
 
 #Actividades realizadas por usuario
 @app.route('/activities_user', methods=['POST'])
@@ -228,8 +233,11 @@ def get_activities():
     data = request.json
     access_token = data['access_token']
 
-    response = getActivities(access_token)
-
+    #Obtener actividades realizadas por el usuario
+    try:
+        response = getActivities(access_token)
+    except ApiException as e:
+        return jsonify({'activities' : 'expired'})
     res = []
     for i in range(0, len(response)):
         id_actividad = response[i].id
@@ -251,6 +259,7 @@ def get_activities():
     return jsonify({'activities': res})
 
 #Verificar si el usuario se conecta por primera vez
+#p
 def new_user(data):
     cur = mysql.connection.cursor()
     cur.execute("SELECT  * from Usuario where id = %d" %int(data['ID']))
@@ -259,6 +268,7 @@ def new_user(data):
 
     #Verificar si el usuario no existe
     if(result['data'] == []):
+        #Si no existe lo guarda en la base de datos
         cur.execute("insert into Usuario values ('{}', '{}', '{}', '{}', '{}', '{}')".format(
                                 data['ID'],
                                 data['username'],
@@ -268,14 +278,18 @@ def new_user(data):
                                 data['refresh_token']))
         mysql.connection.commit()
 
+#Guardar usuario en la base de datos
 @app.route('/save_user', methods=['POST'])
 def save_user():
     data = request.json
+    user_data = data['access_token']
+
     new_user(data)
-    # data = {"ID": id_user, "username": username, "firstname": firstname, 
-    #        "lastname": lastname, "access_token": access_token, "refresh_token":refresh_token}
 
     return jsonify({'status': 200})
+
+#----------------------------------LOGIN ANTIGUO------------------------------------#
+#-----------------------------------------------------------------------------------#
 
 #Obtener y guardar los datos de usuario cuando autorize los permisos de la aplicación.
 def exchange_token(code):
@@ -288,9 +302,7 @@ def exchange_token(code):
             'grant_type': 'authorization_code'
         }
     ).json()
-    #print(strava_request.json()['access_token'])
 
-    #Save user data 
     id_user  = strava_request['athlete']['id']
     username  = strava_request['athlete']['username']
     firstname  = strava_request['athlete']['firstname']
@@ -301,12 +313,12 @@ def exchange_token(code):
     data = {"ID": id_user, "username": username, "firstname": firstname, 
             "lastname": lastname, "access_token": access_token, "refresh_token":refresh_token}
     
-    new_user(data) #save data user
+    #Guardar datos del usuario
+    new_user(data)
 
     
     data = {'id': id_user, 'refresh_token': refresh_token}
     return render_template('layout.html', datos = data)
-    #return jsonify({'ID': id_user, 'refresh_token': refresh_token})
 
 #URL de solicitud de permisos de la aplicación
 @app.route('/strava_authorize', methods=['GET'])
@@ -329,6 +341,9 @@ def strava_token():
     if not code:
         return Response('Error: Missing code param', status=400)
     return exchange_token(code)
+
+#-----------------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------------#
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

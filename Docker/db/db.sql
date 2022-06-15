@@ -35,7 +35,6 @@ CREATE TABLE Pregunta(
     ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     pregunta VARCHAR(300),
     tipo_cuestionario VARCHAR(50),
-    tipo_respuesta VARCHAR(100),
     FOREIGN KEY(tipo_cuestionario) REFERENCES TipoCuestionario(tipo)
 );
 
@@ -49,10 +48,25 @@ CREATE TABLE Registro(
     FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
 );
 
+CREATE TABLE PreguntaSlider(
+    id_pregunta INT NOT NULL PRIMARY KEY,
+    tipo_respuesta VARCHAR(20),
+    tipo_preg VARCHAR(20),
+    valueStringMin VARCHAR(50),
+    valueStringMax VARCHAR(50),
+    FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
+);
+
+CREATE TABLE PreguntaDropDown(
+    id_pregunta INT NOT NULL,
+    tipo_respuesta VARCHAR(20),
+    FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
+);
+
 CREATE TABLE Alternativas(
     id_pregunta INT NOT NULL,
     alternativa VARCHAR(200),
-    FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
+    FOREIGN KEY(id_pregunta) REFERENCES PreguntaDropDown(id_pregunta)
 );
 
 INSERT INTO Usuario
@@ -78,19 +92,34 @@ VALUES
 
 INSERT INTO Pregunta
 VALUES
-(1, "¿Cómo calificaría el nivel de esfuerzo para completar el entrenamiento?", "pep", "slider"),
-(2, "¿Cómo calificaría su calidad de sueño la noche anterior al entrenamiento?", "pep", "slider"),
-(3, "¿Como calificaria su motivación durante el entrenamiento?", "pep", "slider"),
-(4, "¿Cómo calificaría su estrés durante el entrenamiento?","pep", "slider"),
-(5, "¿Cómo calificaría su ánimo durante el entrenamiento?", "pep", "slider"),
-(6, "¿Cómo calificaría su fatiga en general?", "pep", "slider"),
-(11, "¿Cómo se produjo su lesión?", "pl", "dropdown"),
-(12, "¿Cómo fue el inicio de su lesión?", "pl", "dropdown"),
-(13, "Si el inicio de su lesión fue súbidto, ¿Cuál fue el mecanismo de su lesión?", "pl", "dropdown"),
-(14, "¿En qué parte del cuerpo fue su lesión?", "pl", "dropdown"),
-(15, "¿En qué tejido fue su lesión?", "pl", "dropdown"),
-(17, "¿Lorem ipsum bla bla bla?", "pr", "checkbox"),
-(20, "¿Lorem ipsum bla bla bla?", "pr", "checkbox");
+(1, "¿Cómo calificaría el nivel de esfuerzo para completar el entrenamiento?", "pep"),
+(2, "¿Cómo calificaría su calidad de sueño la noche anterior al entrenamiento?", "pep"),
+(3, "¿Como calificaria su motivación durante el entrenamiento?", "pep"),
+(4, "¿Cómo calificaría su estrés durante el entrenamiento?","pep"),
+(5, "¿Cómo calificaría su ánimo durante el entrenamiento?", "pep"),
+(6, "¿Cómo calificaría su fatiga en general?", "pep"),
+(11, "¿Cómo se produjo su lesión?", "pl"),
+(12, "¿Cómo fue el inicio de su lesión?", "pl"),
+(13, "Si el inicio de su lesión fue súbidto, ¿Cuál fue el mecanismo de su lesión?", "pl"),
+(14, "¿En qué parte del cuerpo fue su lesión?", "pl"),
+(15, "¿En qué tejido fue su lesión?", "pl");
+
+INSERT INTO PreguntaDropDown
+VALUES
+(11, "dropdown"),
+(12, "dropdown"),
+(13, "dropdown"),
+(14, "dropdown"),
+(15, "dropdown");
+
+INSERT INTO PreguntaSlider
+VALUES
+(1, "slider", "negativa", "Extremadamente ligero", "Extremadamente duro"),
+(2, "slider", "negativa", "Bastante buena", "Bastante mala"),
+(3, "slider", "positiva", "Nada motivado", "Muy motivado"),
+(4, "slider", "negativa", "Nada de estresado", "Muy estresado"),
+(5, "slider", "positiva", "Muy desanimado", "Muy animado"),
+(6, "slider", "negativa", "Nada de fatigado", "Muy fatigado");
 
 
 INSERT INTO Registro
@@ -131,12 +160,14 @@ VALUES
 (14, "Rodilla"),
 (14, "Pierna"),
 (14, "Tobillo"),
+(14, "Pie"),
 (15, "Músculo"),
 (15, "Tendón"),
 (15, "Cerebro"),
 (15, "Médula espina"),
+(15, "Nervios periféricos"),
 (15, "Hueso"),
-(15, "Cartilago"),
+(15, "Cartílago"),
 (15, "Bursa"),
 (15, "Cápsula"),
 (15, "Ligamento"),
