@@ -60,6 +60,8 @@ CREATE TABLE PreguntaSlider(
 CREATE TABLE PreguntaDropDown(
     id_pregunta INT NOT NULL,
     tipo_respuesta VARCHAR(20),
+    onFocus VARCHAR(20),
+    onBlur VARCHAR(20),
     FOREIGN KEY(id_pregunta) REFERENCES Pregunta(ID)
 );
 
@@ -88,7 +90,8 @@ INSERT INTO TipoCuestionario
 VALUES
 ("pep"),
 ("pl"),
-("pr");
+("pr"),
+("pu");
 
 INSERT INTO Pregunta
 VALUES
@@ -102,15 +105,26 @@ VALUES
 (12, "¿Cómo fue el inicio de su lesión?", "pl"),
 (13, "Si el inicio de su lesión fue súbidto, ¿Cuál fue el mecanismo de su lesión?", "pl"),
 (14, "¿En qué parte del cuerpo fue su lesión?", "pl"),
-(15, "¿En qué tejido fue su lesión?", "pl");
+(15, "¿En qué tejido fue su lesión?", "pl"),
+(16, "Creo que me gustaría usar esta aplicación con frecuencia.", "pu"),
+(17, "Encontré la aplicación innecesariamente compleja.", "pu"),
+(18, "Pensé que la aplicación era fácil de usar.", "pu"),
+(19, "Creo que necesitaría el apoyo de un técnico para poder utilizar la aplicación.", "pu"),
+(20, "Descubrí que las diversas funciones de este sistema estaban bien integradas.", "pu"),
+(21, "Pensé que había demasiada inconsistencia en este sistema.", "pu"),
+(22, "Me imagino que la mayoría de la gente aprendería a usar esta aplicación muy rápidamente", "pu"),
+(23, "Encontré la aplicación muy engorrosa de usar.", "pu"),
+(24, "Me sentí muy confiado usando la aplicación.", "pu"),
+(25, "Necesitaba aprender muchas cosas antes de poder ponerme en marcha con este sistema.", "pu");
+
 
 INSERT INTO PreguntaDropDown
 VALUES
-(11, "dropdown"),
-(12, "dropdown"),
-(13, "dropdown"),
-(14, "dropdown"),
-(15, "dropdown");
+(11, "dropdown", 'blue', 'gray'),
+(12, "dropdown", 'blue', 'gray'),
+(13, "dropdown", 'blue', 'gray'),
+(14, "dropdown", 'blue', 'gray'),
+(15, "dropdown", 'blue', 'gray');
 
 INSERT INTO PreguntaSlider
 VALUES
@@ -119,7 +133,17 @@ VALUES
 (3, "slider", "positiva", "Nada motivado", "Muy motivado"),
 (4, "slider", "negativa", "Nada de estresado", "Muy estresado"),
 (5, "slider", "positiva", "Muy desanimado", "Muy animado"),
-(6, "slider", "negativa", "Nada de fatigado", "Muy fatigado");
+(6, "slider", "negativa", "Nada de fatigado", "Muy fatigado"),
+(16, "slider", "positiva", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(17, "slider", "negativa", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(18, "slider", "positiva", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(19, "slider", "negativa", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(20, "slider", "positiva", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(21, "slider", "negativa", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(22, "slider", "positiva", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(23, "slider", "negativa", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(24, "slider", "positiva", "Totalmente en desacuerdo", "Totalmente de acuerdo"),
+(25, "slider", "negativa", "Totalmente en desacuerdo", "Totalmente de acuerdo");
 
 
 INSERT INTO Registro

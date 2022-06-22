@@ -1,6 +1,6 @@
 
 import urllib.parse
-from flask import Flask, request, Response, jsonify, redirect, render_template
+from flask import Flask, request, Response, jsonify, redirect, render_template, send_file
 from flask_mysqldb import MySQL
 import requests
 import datetime
@@ -43,6 +43,21 @@ def getActivities(access_token):
         #print("Exception when calling ActivitiesApi->getLoggedInAthleteActivities: %s\n" % e)
         return(e)
 
+@app.route('/test')
+def test(): 
+    return jsonify({'status': 200})
+
+@app.route('/welcome')
+def welcome():  
+    data = {'id': "1", 'refresh_token': "2381ind1hd981hd91u2d9182h91d"}
+    return render_template('welcome.html', datos = data)
+
+@app.route('/download')
+def download():  
+    path = "app-release.apk"
+    return send_file(path, as_attachment=True)
+
+
 #Validación de IDUsuario y contraseña.
 @app.route('/login', methods=['POST'])
 def login():   
@@ -75,22 +90,35 @@ def Preguntas():
     cur = mysql.connection.cursor()
 
     #Consultar por la preguntas de tipo slider correspondiente al tipo de cuestionario
-    cur.execute("SELECT PreguntaSlider.id_pregunta, Pregunta.pregunta, Pregunta.tipo_cuestionario, PreguntaSlider.tipo_preg, PreguntaSlider.valueStringMin, PreguntaSlider.valueStringMax, PreguntaSlider.tipo_respuesta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
+    cur.execute("SELECT PreguntaSlider.id_pregunta, Pregunta.pregunta, Pregunta.tipo_cuestionario, PreguntaSlider.tipo_preg, PreguntaSlider.valueStringMin, PreguntaSlider.valueStringMax, PreguntaSlider.tipo_respuesta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s' ORDER BY PreguntaSlider.tipo_preg" %tipo_cuestionario)
     pregs_slider = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
     #-----------------------
 
     #Consultar por las preguntas de tipo dropdown correspondiente al tipo de cuestionario
-    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta, PreguntaDropDown.tipo_respuesta FROM Pregunta INNER JOIN PreguntaDropDown ON PreguntaDropDown.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
+    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta, PreguntaDropDown.tipo_respuesta, PreguntaDropDown.onFocus, PreguntaDropDown.onBlur FROM Pregunta INNER JOIN PreguntaDropDown ON PreguntaDropDown.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
     result = {'preguntas_dropdown':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
     
     preguntas_dropdown = []
     for preg in result['preguntas_dropdown']:
         cur.execute("SELECT alternativa FROM Alternativas where id_pregunta = %d" %int(preg['ID']))
         alternativas = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
-        preguntas_dropdown.append({'id_pregunta': preg['ID'], 'pregunta': preg['pregunta'], 'alternativas': alternativas, 'tipo_respuesta' : preg['tipo_respuesta']})
+        preguntas_dropdown.append({'id_pregunta': preg['ID'], 'pregunta': preg['pregunta'], 'alternativas': alternativas, 'tipo_respuesta' : preg['tipo_respuesta'], 'onFocus' : preg['onFocus'], 'onBlur' : preg['onBlur']})
     #-----------------------
-    
+
     return jsonify({'pregs' : {'preguntas_slider' : pregs_slider, 'preguntas_dropdown' : preguntas_dropdown}})
+
+    
+@app.route('/preguntas_usabilidad', methods=['POST'])
+def PreguntasUsabilidad():
+    data = request.json
+    tipo_cuestionario = data['tipo_preg']
+    cur = mysql.connection.cursor()
+    #Consultar por las preguntas de tipo de slider correspondiente al tipo cuestionario
+    cur.execute("SELECT PreguntaSlider.id_pregunta, Pregunta.pregunta, Pregunta.tipo_cuestionario, PreguntaSlider.tipo_preg, PreguntaSlider.valueStringMin, PreguntaSlider.valueStringMax, PreguntaSlider.tipo_respuesta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = '%s'" %tipo_cuestionario)
+    pregs_slider = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+    #-----------------------
+
+    return jsonify({'pregs' : pregs_slider})
 
 @app.route('/Actividades_registradas', methods=['POST'])
 def ActividadesRegistradas():
@@ -146,19 +174,21 @@ def registros2():
     cur = mysql.connection.cursor()
 
     #Selecionar solamente las preguntas de tipo slider.
-    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID")
+    cur.execute("SELECT Pregunta.ID, Pregunta.pregunta FROM Pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Pregunta.tipo_cuestionario = 'pep'" )
     pregs= [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
 
+    print(pregs)
     data = {}
     for preg in pregs:
         data.setdefault(preg['ID'], {'pregunta' : preg['pregunta'], 'labels': [], 'data':[]})
     
+    tipo_cuestionario = 'pep'
     #Selecionar los registros de respuestas asociados a las preguntas de tipo slider del usuario.
-    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta, Actividad.start_date_local FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Actividad.IDathlete = '{}'".format(
-        id_user
+    cur.execute("SELECT Registro.id_activity, Registro.id_pregunta, Registro.respuesta, Actividad.start_date_local FROM Registro INNER JOIN Actividad ON Actividad.ID = Registro.id_activity INNER JOIN Pregunta ON Pregunta.ID = Registro.id_pregunta INNER JOIN PreguntaSlider ON PreguntaSlider.id_pregunta = Pregunta.ID WHERE Actividad.IDathlete = '{}' and Pregunta.tipo_cuestionario = '{}'".format(
+        id_user, tipo_cuestionario
     ))
     registros = {'registros':[dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]}
-    
+    print(registros)
     #Guardar la fecha de la actividad y la respuesta para cada pregunta de tipo slider.
     for registro in registros['registros']:
         data[registro['id_pregunta']]['labels'].append(registro['start_date_local'])
@@ -259,7 +289,6 @@ def get_activities():
     return jsonify({'activities': res})
 
 #Verificar si el usuario se conecta por primera vez
-#p
 def new_user(data):
     cur = mysql.connection.cursor()
     cur.execute("SELECT  * from Usuario where id = %d" %int(data['ID']))
@@ -344,6 +373,5 @@ def strava_token():
 
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)

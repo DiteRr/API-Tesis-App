@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+  </head>
+  <body>
+    <img src="{{url_for('static', filename='imgs/logo.png')}}" width="200px" class="center">
+    
+    <h1 class="instruc" style="text-align:center"> Bienvenida </h1>
+    
+    <div class="in-flex">
+      <h2 class="title"> Aplicación movil para deportistas que utilizen STRAVA para registrar el esfuerzo percibido de sus actividades. </h2>
+    </div>
+    <br>
+    <div class="in-flex">
+        <h3>
+            Hola buenas, me presento, soy alumno de Ingenieria civil informatica UACH y nos encontramos realizando una aplicación deportiva para registrar el 
+            esfuerzo percibido que presentan los deportistas en las actividades relacionadas al correr.
+        </h3>
+    </div>
+    
+    <div class="in-flex">
+        <h2> Caracteristicas de la aplicacion </h2>
+     </div>
+     <div class="in-flex">
+        <ol>
+            <li> Esta aplicación consta de varias preguntas faciles de contestar para poder registrar su carga de entrenamiento, como su esfuerzo o estado de animo antes y 
+                despues de la actividad deportiva. </li>
+            <li> Tambíen podrás registrar caracteristicas de una lesión especifica que hayas tenido de una actividad. </li>
+            <li> Podras ver tus estadisticas de carga de entrenamiento asociadas a tu historial de actividades registradas. </li>
+            <li> El principal enfoque que posee esta aplicación es de utilizar sus datos registrados para utilizarlos posteriormente en herramientas y modelos de predicción
+                de lesiones, de manera que permita tener un seguimiento de su rutina de entrenamiento. Esto ultimo quedaría en una etapa investigativa para indentificar que 
+                variables de carga de entrenamiento son influyentes para proporcionarle una minima posiblidad de riesgo de lesión y un mejor rendimiendo es sus actividades.
+            </li>
+        </ol>
+     </div>
+     <div class="in-flex">
+        <h2> 
+            Limitaciones de la aplicación:
+        </h2>
+     </div>
+     <div class="in-flex">
+        <ol>
+            <li> La aplicación actualmente esta disponible solo para usuario que registren actividades en STRAVA (o dispositivos que se conecten a STRAVA por Ej: Garming).</li>
+            <li> La aplicación por ahora esta disponible solo para ANDROID. </li>          
+        </ol>
+     </div>
+     <div class="in-flex">
+        <h2> 
+            Descarga de la aplicación:
+        </h2>
+     </div>
+     <div class="in-flex">
+        <ol>
+            <li> Se le proporcionara un APK para poder descargar la aplicación en dispositivos ANDROID </li>    
+        </ol>
+     </div>
+
+    <div class="center">
+        <a  href="{{url_for('download')}}">
+            <button class="k2-copy-button" id="id_button"> Descargar APK </button>
+        </a>
+    </div>
+
+    <br>
+    <script>
+      function copy_id_user(event) {
+        console.log("Hola")
+      } 
+      document.getElementById('id_button').addEventListener('click', copy_id_user);
+    </script>
+    <!--<script src="{{url_for('static', filename='js/main.js')}}"></script>-->
+
+  </body>
+
+
+</html>
